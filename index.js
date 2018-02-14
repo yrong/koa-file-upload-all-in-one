@@ -1,0 +1,89 @@
+const uuid = require("uuid")
+const path = require("path")
+const mount = require("koa-mount")
+const parse = require("async-busboy-fork")
+
+const fileUpload = (opts) => {
+
+    let store
+    try {
+        store = require(`./${opts.provider}`)(opts)
+    } catch (err) {
+        throw new Error(`Error: ${err}`)
+    }
+    if(!opts.filename)
+        opts.filename = (file)=>file.filename
+
+    const {mimetypes, exts, filename} = opts
+
+    const handler = async (ctx, next) => {
+        // Validate Request
+        if ("POST" !== ctx.method && !ctx.request.is("multipart/*")) {
+            return await next()
+        }
+
+        // Parse request for multipart
+        const {files, fields} = await parse(ctx.req,opts)
+        console.log('multipart request parsed!')
+        // Check if any file is not valid mimetype
+        if (mimetypes) {
+            const invalidFiles = files.filter(file => {
+                return !mimetypes.includes(file.mimeType)
+            })
+
+            // Return err if any not valid
+            if (invalidFiles.length !== 0) {
+                ctx.status = 400
+                ctx.body = `Error: Invalid type of files ${invalidFiles.map(file => `${file.filename}[${file.mimeType}]`)}`
+                return
+            }
+        }
+
+        // Check if any file is not valid ext
+        if (exts) {
+            const invalidFiles = files.filter(file => {
+                return !exts.includes(file.filename.substring(file.filename.lastIndexOf('.') + 1))
+            })
+
+            // Return err if any not valid
+            if (invalidFiles.length !== 0) {
+                ctx.status = 400
+                ctx.body = `Error: Invalid type of files ${invalidFiles.map(file => file.filename)}`
+                return
+            }
+        }
+
+        // Generate oss path
+        let result = {}
+        const storeDir = opts.storeDir ? `${opts.storeDir}/` : ''
+        files.forEach(file => {
+            const fileId = typeof filename === 'function' ?
+                filename(file) : `${uuid.v4()}${path.extname(file.filename)}`
+            result[file.filename] = {
+                storeDir: `${storeDir}`,
+                fileId: fileId,
+            }
+        })
+
+        await Promise.all(files.map(async file => {
+            const { storeDir, fileId } = result[file.filename]
+            let fileHash = await store.put(`${storeDir}/${fileId}`, file, ctx)
+            if(opts.provider==='fc')
+                result[file.filename].fileId = fileHash
+        }))
+        console.log('backend store success,file path:' + JSON.stringify(result))
+
+        // Return result
+        ctx.status = 200
+        ctx.body = await store.get(result)
+        console.log('get url from backend store success,file path:' + JSON.stringify(result))
+    }
+    return {handler,store}
+}
+
+module.exports = (options) => {
+    if (!options.url) {
+        throw new Error('Can not find option url')
+    }
+    return fileUpload(options)
+}
