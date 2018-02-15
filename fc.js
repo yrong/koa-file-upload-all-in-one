@@ -4,13 +4,12 @@ const rp = require('request-promise')
 const _ = require('lodash')
 const IpfsApi = require('ipfs-api')
 const Web3 = require('web3')
-const SimpleStorageContract = require('./build/contracts/SimpleStorage.json')
 const contract = require('truffle-contract')
 
 module.exports = (options) => {
     const ipfs = IpfsApi({host: options.ipfs.api_host, port: options.ipfs.api_port, protocol: 'http'})
     const web3 = new Web3(new Web3.providers.HttpProvider(`http://${options.web3.host}:${options.web3.port}`))
-    const simpleStorage = contract(SimpleStorageContract)
+    const simpleStorage = contract(options.contract)
     simpleStorage.setProvider(web3.currentProvider)
     return {
         put: async (filename, file, ctx) => {
