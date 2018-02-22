@@ -2,6 +2,8 @@ const uuid = require("uuid")
 const path = require("path")
 const mount = require("koa-mount")
 const parse = require("async-busboy-fork")
+const _ = require('lodash')
+// const fc = require('./fc')
 
 const fileUpload = (opts) => {
 
@@ -67,9 +69,8 @@ const fileUpload = (opts) => {
 
         await Promise.all(files.map(async file => {
             const { storeDir, fileId } = result[file.filename]
-            let fileHash = await store.put(`${storeDir}/${fileId}`, file, ctx)
-            if(opts.provider==='fc')
-                result[file.filename].fileId = fileHash
+            let response = await store.put(`${storeDir}/${fileId}`, file, ctx)
+            _.assign(result[file.filename],response)
         }))
         console.log('backend store success,file path:' + JSON.stringify(result))
 

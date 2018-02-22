@@ -1,6 +1,6 @@
 {
   "name": "koa-file-upload-all-in-one",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.4",
   "description": "koa middleware use upload file",
   "main": "index.js",
   "author": "Ronyang <yrong1997@gmail.com>",

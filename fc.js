@@ -17,18 +17,17 @@ module.exports = (options) => {
             let buffer = fs.readFileSync(file.path)
             let response = await ipfs.add(buffer)
             let fileHash = response[0].hash
-            console.log(`${filename} write to ipfs`)
+            console.log(`${filename} written into ipfs`)
             let userId = ctx.token_user?ctx.token_user.uuid:''
             let contractInstance = await simpleStorage.at(options.web3.publish_contract_address)
             let publishTime = new Date().getTime()
             await contractInstance.set(fileHash,userId,publishTime,{from: options.web3.account_address,gas:options.web3.publish_contract_gas_limit})
-            console.log('file metaInfo written into block chain!');
-            return fileHash
+            console.log(`${filename} metaInfo written into block chain!`)
+            return {fileHash,publisher:userId,publishTime}
         },
         get: async (result) => {
             Object.keys(result).map(filename => {
-                let value = result[filename]
-                return result[filename] = {fileHash:value.fileId,fileUrl:encodeURI(`http://${options.ipfs.api_host}:${options.ipfs.gateway_port}/ipfs/${value.fileId}`)}
+                result[filename].fileUrl = encodeURI(`http://${options.ipfs.api_host}:${options.ipfs.gateway_port}/ipfs/${result[filename].fileHash}`)
             })
             return result
         }
