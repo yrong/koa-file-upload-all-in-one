@@ -13,16 +13,21 @@ const fileUpload = (opts) => {
     } catch (err) {
         throw new Error(`Error: ${err}`)
     }
-    if(!opts.filename)
-        opts.filename = (file)=>file.filename
-
-    const {mimetypes, exts, filename} = opts
 
     const handler = async (ctx, next) => {
+
         // Validate Request
         if ("POST" !== ctx.method && !ctx.request.is("multipart/*")) {
             return await next()
         }
+
+        let {mimetypes, exts} = opts
+
+        let filename
+        if(ctx.query.unique==='true'){
+            filename =  (file)=>`${uuid().replace(/-/g, '')}${path.extname(file.filename)}`
+        }
+        filename = filename||((file)=>file.filename)
 
         // Parse request for multipart
         const {files, fields} = await parse(ctx.req,opts)
@@ -60,7 +65,7 @@ const fileUpload = (opts) => {
         const storeDir = opts.storeDir ? `${opts.storeDir}/` : ''
         files.forEach(file => {
             const fileId = typeof filename === 'function' ?
-                filename(file) : `${uuid.v4()}${path.extname(file.filename)}`
+                filename(file) : file.filename
             result[file.filename] = {
                 storeDir: `${storeDir}`,
                 fileId: fileId,
