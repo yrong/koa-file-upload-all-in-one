@@ -3,8 +3,6 @@ const webdav = require('webdav')
 const fs = require('fs')
 const rp = require('request-promise')
 const _ = require('lodash')
-const iconv = require('iconv-lite')
-const detectCharacterEncoding = require('detect-character-encoding');
 
 module.exports = (options) => {
     return {
@@ -17,10 +15,6 @@ module.exports = (options) => {
                 options.nc_admin_password
             );
             let buf = fs.readFileSync(file.path)
-            let encoding = detectCharacterEncoding(buf)
-            if(encoding&&encoding.encoding&&encoding.encoding.startsWith("GB")){
-                buf = iconv.encode(iconv.decode(buf, encoding.encoding),'utf8')
-            }
             let result = await client.putFileContents(encodeURI(`${options.nc_share_path}/${filename}`),buf,{ format: "binary" })
             console.log(`${filename} uploaded`)
             return result
