@@ -27,7 +27,7 @@ module.exports = (options) => {
         },
         get: async (result) => {
             Object.keys(result).map(filename => {
-                result[filename].fileUrl = encodeURI(`http://${options.ipfs.api_host}:${options.ipfs.gateway_port}/ipfs/${result[filename].fileHash}`)
+                result[filename].fileUrl = encodeURI(`http://${options.ipfs.api_host}:${options.ipfs.gateway_port}/ipfs/${result[filename].putResult.fileHash}`)
             })
             return result
         }

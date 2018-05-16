@@ -1,6 +1,6 @@
 {
   "name": "koa-file-upload-all-in-one",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.9",
   "description": "koa middleware use upload file",
   "main": "index.js",
   "author": "Ronyang <yrong1997@gmail.com>",
@@ -26,6 +26,7 @@
     "uuid": "^2.0.3",
     "webdav": "^0.9.0",
     "truffle": "^4.0.6",
-    "truffle-contract": "^3.0.3"
+    "truffle-contract": "^3.0.3",
+    "sharp": "^0.20.2"
   }
 }

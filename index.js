@@ -3,7 +3,7 @@ const path = require("path")
 const mount = require("koa-mount")
 const parse = require("async-busboy-fork")
 const _ = require('lodash')
-// const fc = require('./fc')
+const local = require('./local')
 
 const fileUpload = (opts) => {
 
@@ -23,15 +23,15 @@ const fileUpload = (opts) => {
 
         let {mimetypes, exts} = opts
 
-        let filename
-        if(ctx.query.unique==='true'){
-            filename =  (file)=>`${uuid().replace(/-/g, '')}${path.extname(file.filename)}`
-        }
-        filename = filename||((file)=>file.filename)
-
         // Parse request for multipart
         const {files, fields} = await parse(ctx.req,opts)
         console.log('multipart request parsed!')
+
+        let params=_.assign({},ctx.query,fields),filename
+        if(params.unique==='true'){
+            filename =  (file)=>`${uuid().replace(/-/g, '')}${path.extname(file.filename)}`
+        }
+        filename = filename||((file)=>file.filename)
         // Check if any file is not valid mimetype
         if (mimetypes) {
             const invalidFiles = files.filter(file => {
@@ -66,19 +66,18 @@ const fileUpload = (opts) => {
         files.forEach(file => {
             const fileId = typeof filename === 'function' ?
                 filename(file) : file.filename
-            result[file.filename] = {
+            file.fileId = fileId
+            result[fileId] = {
                 storeDir: `${storeDir}`,
                 fileId: fileId,
             }
         })
 
         await Promise.all(files.map(async file => {
-            const { storeDir, fileId } = result[file.filename]
-            let response = await store.put(`${storeDir}/${fileId}`, file, ctx)
-            _.assign(result[file.filename],response)
+            let putResult = await store.put(`${storeDir}/${file.fileId}`, file, ctx, fields)
+            _.assign(result[file.fileId],{putResult})
         }))
         console.log('backend store success,file path:' + JSON.stringify(result))
-
         // Return result
         ctx.status = 200
         ctx.body = await store.get(result)

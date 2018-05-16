@@ -1,6 +1,8 @@
 const fs = require("fs")
 const path = require("path")
 const mkdirp = require("mkdirp")
+const _ = require('lodash')
+const sharp = require('sharp')
 
 module.exports = (options) => {
     if (!(options.folder)) {
@@ -12,13 +14,25 @@ module.exports = (options) => {
     }
 
     return {
-        put: (filePath, file) => {
+        put: (filePath, file,ctx,fields) => {
             return new Promise((resolve, reject) => {
                 let absoluteFilePath = path.join(options.folder, filePath)
                 mkdirp.sync(path.dirname(absoluteFilePath))
-                const stream = fs.createWriteStream(absoluteFilePath)
-                file.pipe(stream)
-                file.on("end", () => { return resolve(filePath) })
+                let writableStream = fs.createWriteStream(absoluteFilePath)
+                let params=_.assign({},ctx.query,fields)
+                if(params.resize==='true'){
+                    let width = parseInt(params.width||'320'),height = parseInt(params.height||'240')
+                    let transformer = sharp()
+                        .resize(width,height)
+                        .on('info', function(info) {
+                            console.log('Image resized as:' + JSON.stringify(info))
+                            return resolve(filePath)
+                        })
+                    file.pipe(transformer).pipe(writableStream)
+                }else{
+                    file.pipe(writableStream)
+                    file.on("end", () => { return resolve(filePath)})
+                }
             })
         },
         get: async (result) => {
